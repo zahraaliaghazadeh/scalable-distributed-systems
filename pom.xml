@@ -5,11 +5,11 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.example</groupId>
-  <artifactId>distributed-systems-NU</artifactId>
+  <artifactId>scalable-distributed-systems</artifactId>
   <version>1.0-SNAPSHOT</version>
   <packaging>war</packaging>
 
-  <name>distributed-systems-NU Maven Webapp</name>
+  <name>scalable-distributed-systems Maven Webapp</name>
   <!-- FIXME change it to the project's website -->
   <url>http://www.example.com</url>
 
@@ -46,7 +46,7 @@
   </dependencies>
 
   <build>
-    <finalName>distributed-systems-NU</finalName>
+    <finalName>scalable-distributed-systems</finalName>
     <pluginManagement><!-- lock down plugins versions to avoid using Maven defaults (may be moved to parent pom) -->
       <plugins>
         <plugin>
