@@ -10,13 +10,18 @@ import java.util.Arrays;
 
 public class SkierServlet extends HttpServlet {
   protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException, IOException {
+    try {
+      Thread.sleep(1000);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     res.setContentType("text/plain");
     String urlPath = req.getPathInfo();
 
     // check we have a URL!
     if (urlPath == null || urlPath.isEmpty()) {
       res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-      res.getWriter().write("missing paramterers");
+      res.getWriter().write("missing parameterers");
       return;
     }
 
@@ -41,7 +46,7 @@ public class SkierServlet extends HttpServlet {
     // check we have a URL!
     if (urlPath == null || urlPath.isEmpty()) {
       res.setStatus(HttpServletResponse.SC_NOT_FOUND);
-      res.getWriter().write("missing paramterers");
+      res.getWriter().write("missing parameterers");
       return;
     }
 
