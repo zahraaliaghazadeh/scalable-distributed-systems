@@ -57,7 +57,7 @@ public class SkierServlet extends HttpServlet {
     if (!isUrlValid(urlParts)) {
       res.setStatus(HttpServletResponse.SC_NOT_FOUND);
     } else {
-      res.setStatus(HttpServletResponse.SC_OK);
+      res.setStatus(HttpServletResponse.SC_CREATED);
       // do any sophisticated processing with urlParts which contains all the url params
       // TODO: process url params in `urlParts`
       res.getWriter().write("It works!");
