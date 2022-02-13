@@ -8,15 +8,24 @@ import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.commons.httpclient.methods.StringRequestEntity;
 import org.apache.commons.httpclient.params.HttpMethodParams;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.stream.Collectors;
 
 public class SkierClient {
-//  private static String url = "http://localhost:8080/distributed_systems_NU_war_exploded/";
-  private static final String postSkierUrl = "http://localhost:8080/distributed_systems_NU_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
+//  private static String url = "http://localhost:8080/scalable-distributed-systems_war_exploded/";
+  private static final String postSkierUrl = "http://localhost:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
   private static int successfulRequests = 0;
   private static int failedRequests = 0;
+  private static long wallTime = 0;
+  private static List<RequestPerformance> requestPerformances = new ArrayList<>();
+  private static final Object requestPerformanceLock = new Object();
 
   public static void main(String[] args) throws Exception {
     int numThreads = Integer.parseInt(args[0]);
@@ -29,6 +38,7 @@ public class SkierClient {
     executePhase2(numThreads, numSkiers, numLifts, numRuns);
     executePhase3(numThreads, numSkiers, numLifts, numRuns);
     long endRuntime = System.currentTimeMillis();
+    wallTime = endRuntime - startRuntime;
     long totalRuntime = endRuntime - startRuntime;
     int totalRequests = successfulRequests + failedRequests;
     double throughput = totalRequests / (totalRuntime / 1000.0);
@@ -36,6 +46,8 @@ public class SkierClient {
     System.out.println("Failed Requests: " + failedRequests);
     System.out.println("Total run time: " + totalRuntime + " ms");
     System.out.println("Total throughput: " + throughput + " requests/s");
+    writeReqPerformancesToCsv("performance.csv");
+    printPerformances();
   }
 
   private static void executePhase1(
@@ -128,7 +140,7 @@ public class SkierClient {
       int liftId = rand.nextInt(numLifts - 1) + 1;
       int time = rand.nextInt(timeEnd - timeStart) + timeStart;
       int waitTime = rand.nextInt(11);
-      int statusCode = sendPost(skierId, liftId, time, waitTime);
+      int statusCode = sendPostDecorator(skierId, liftId, time, waitTime);
       if (statusCode == 201) {
         incrementSuccess();
       } else if (statusCode >= 400) {
@@ -143,6 +155,27 @@ public class SkierClient {
 
   private static synchronized void incrementFailures() {
     failedRequests++;
+  }
+
+  private static int sendPostDecorator(
+          int skierId,
+          int liftId,
+          int time,
+          int waitTime
+  ) {
+    long startTime = System.currentTimeMillis();
+    int statusCode = sendPost(skierId, liftId, time, waitTime);
+    long endTime = System.currentTimeMillis();
+    long latency = endTime - startTime;
+    RequestPerformance requestPerformance = new RequestPerformance();
+    requestPerformance.startTime = startTime;
+    requestPerformance.latency = latency;
+    requestPerformance.requestType = "POST";
+    requestPerformance.statusCode = statusCode;
+    synchronized (requestPerformanceLock) {
+      requestPerformances.add(requestPerformance);
+    }
+    return statusCode;
   }
 
   private static int sendPost(
@@ -193,8 +226,65 @@ public class SkierClient {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-
   }
+
+  private static void writeReqPerformancesToCsv(String filename) {
+    PrintWriter pw;
+    try {
+      pw = new PrintWriter(new File(filename));
+    } catch (FileNotFoundException e) {
+      e.printStackTrace();
+      return;
+    }
+    StringBuilder builder = new StringBuilder();
+    String columnNamesList = "RequestType,StartTime,Latency,StatusCode";
+    builder.append(columnNamesList + "\n");
+    synchronized (requestPerformanceLock) {
+      for (RequestPerformance rp : requestPerformances) {
+        builder.append(rp.startTime);
+        builder.append(",");
+        builder.append(rp.requestType);
+        builder.append(",");
+        builder.append(rp.latency);
+        builder.append(",");
+        builder.append(rp.statusCode);
+        builder.append("\n");
+      }
+    }
+    pw.write(builder.toString());
+    pw.close();
+  }
+
+  private static void printPerformances() {
+    synchronized (requestPerformanceLock) {
+      List<Long> sortedLatencies = requestPerformances.stream().map((rp) -> (rp.latency))
+              .sorted()
+              .collect(Collectors.toList());
+      double mean = sortedLatencies.stream().mapToLong(l -> l)
+              .average()
+              .orElse(0);
+      int count = sortedLatencies.size();
+      double median;
+      int mid = count / 2;
+      if (count % 2 == 0) {
+        median = sortedLatencies.get(mid-1) + sortedLatencies.get(mid) / 2.0;
+      } else {
+        median = sortedLatencies.get(mid);
+      }
+      long min = sortedLatencies.get(0);
+      long max = sortedLatencies.get(sortedLatencies.size() - 1);
+      double throughput = 1000.0 * count / wallTime; // convert to seconds
+      long p99Latency = sortedLatencies.get((int) Math.ceil(0.99 * count) - 1);
+      System.out.println("Mean response time = " + mean + " ms");
+      System.out.println("Median response time = " + median + " ms");
+      System.out.println("Throughput = " + throughput + " requests/sec");
+      System.out.println("Min response time = " + min + " ms");
+      System.out.println("Max response time = " + max + " ms");
+      System.out.println("p99 response time = " + p99Latency + " ms");
+    }
+  }
+
+
 
   public static class RequestBodySkier {
     private int liftId;
@@ -224,6 +314,14 @@ public class SkierClient {
     public void setWaitTime(int waitTime) {
       this.waitTime = waitTime;
     }
+  }
+
+
+  private static class RequestPerformance {
+    long startTime;
+    String requestType;
+    long latency;
+    int statusCode;
   }
 
 //  private static void callServlet() {
