@@ -15,8 +15,8 @@ import java.util.concurrent.CountDownLatch;
 public class SkierClient {
 //  private static String url = "http://localhost:8080/distributed_systems_NU_war_exploded/";
   private static final String postSkierUrl = "http://localhost:8080/distributed_systems_NU_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
-
-
+  private static int successfulRequests = 0;
+  private static int failedRequests = 0;
 
   public static void main(String[] args) throws Exception {
     int numThreads = Integer.parseInt(args[0]);
@@ -24,9 +24,18 @@ public class SkierClient {
     int numLifts = Integer.parseInt(args[2]);
     int numRuns = Integer.parseInt(args[3]);
     String ipPort = args[4];
+    long startRuntime = System.currentTimeMillis();
     executePhase1(numThreads, numSkiers, numLifts, numRuns);
     executePhase2(numThreads, numSkiers, numLifts, numRuns);
     executePhase3(numThreads, numSkiers, numLifts, numRuns);
+    long endRuntime = System.currentTimeMillis();
+    long totalRuntime = endRuntime - startRuntime;
+    int totalRequests = successfulRequests + failedRequests;
+    double throughput = totalRequests / (totalRuntime / 1000.0);
+    System.out.println("Successful Requests: " + successfulRequests);
+    System.out.println("Failed Requests: " + failedRequests);
+    System.out.println("Total run time: " + totalRuntime + " ms");
+    System.out.println("Total throughput: " + throughput + " requests/s");
   }
 
   private static void executePhase1(
@@ -63,7 +72,6 @@ public class SkierClient {
           final int numLifts,
           final int numRuns
   ) throws InterruptedException {
-    // TODO phase 2 still buggy
     final int timeStart = 91;
     final int timeEnd = 360;
     final int skierIdRange = numSkiers / numThreads;
@@ -114,7 +122,6 @@ public class SkierClient {
           int timeStart,
           int timeEnd
   ) {
-    int numSuccess = 0, numFailures = 0;
     Random rand = new Random();
     for (int i = 0; i < numRequests; i++) {
       int skierId = rand.nextInt(skierIdEnd - skierIdStart) + skierIdStart;
@@ -123,12 +130,19 @@ public class SkierClient {
       int waitTime = rand.nextInt(11);
       int statusCode = sendPost(skierId, liftId, time, waitTime);
       if (statusCode == 201) {
-        numSuccess++;
+        incrementSuccess();
       } else if (statusCode >= 400) {
-        numFailures++;
+        incrementFailures();
       }
     }
-    System.out.println("numSuccess = " + numSuccess);
+  }
+
+  private static synchronized void incrementSuccess() {
+    successfulRequests++;
+  }
+
+  private static synchronized void incrementFailures() {
+    failedRequests++;
   }
 
   private static int sendPost(
@@ -138,6 +152,8 @@ public class SkierClient {
           int waitTime
   ) {
     try {
+      // TODO handle too many connections:
+      // https://stackoverflow.com/questions/1978053/bindexception-address-already-in-use-on-a-client-socket
       // Create an instance of HttpClient.
       HttpClient client = new HttpClient();
 
