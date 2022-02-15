@@ -20,7 +20,9 @@ import java.util.stream.Collectors;
 
 public class SkierClient {
 //  private static String url = "http://localhost:8080/scalable-distributed-systems_war_exploded/";
-  private static final String postSkierUrl = "http://localhost:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
+//  private static final String postSkierUrl = "http://localhost:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
+private static final String postSkierUrl = "http://http://34.222.164.46:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
+
   private static int successfulRequests = 0;
   private static int failedRequests = 0;
   private static long wallTime = 0;
