@@ -21,13 +21,15 @@ import java.util.stream.Collectors;
 public class SkierClient {
 //  private static String url = "http://localhost:8080/scalable-distributed-systems_war_exploded/";
 //  private static final String postSkierUrl = "http://localhost:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
-private static final String postSkierUrl = "http://http://34.222.164.46:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
+//private static final String postSkierUrl = "http://ec2-34-222-164-46.us-west-2.compute.amazonaws.com:8080/distributed-systems-NU_war/skiers/12/seasons/2019/days/1/skiers/%s";
+private static final String postSkierUrl = "http://%s/distributed-systems-NU_war/skiers/12/seasons/2019/days/1/skiers/%s";
 
   private static int successfulRequests = 0;
   private static int failedRequests = 0;
   private static long wallTime = 0;
   private static List<RequestPerformance> requestPerformances = new ArrayList<>();
   private static final Object requestPerformanceLock = new Object();
+  private static String host = "";
 
   public static void main(String[] args) throws Exception {
     int numThreads = Integer.parseInt(args[0]);
@@ -35,6 +37,7 @@ private static final String postSkierUrl = "http://http://34.222.164.46:8080/sca
     int numLifts = Integer.parseInt(args[2]);
     int numRuns = Integer.parseInt(args[3]);
     String ipPort = args[4];
+    host = ipPort;
     long startRuntime = System.currentTimeMillis();
     executePhase1(numThreads, numSkiers, numLifts, numRuns);
     executePhase2(numThreads, numSkiers, numLifts, numRuns);
@@ -193,7 +196,7 @@ private static final String postSkierUrl = "http://http://34.222.164.46:8080/sca
       HttpClient client = new HttpClient();
 
       // Create a method instance.
-      String url = String.format(postSkierUrl, skierId);
+      String url = String.format(postSkierUrl, host, skierId);
       PostMethod method = new PostMethod(url);
 
       // Provide custom retry handler is necessary
