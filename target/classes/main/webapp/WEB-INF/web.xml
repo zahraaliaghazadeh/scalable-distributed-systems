@@ -6,7 +6,7 @@
   <display-name>Archetype Created Web Application</display-name>
   <servlet>
     <servlet-name>SkierServlet</servlet-name>
-    <servlet-class>server.SkierServlet</servlet-class>
+    <servlet-class>SkierServlet</servlet-class>
   </servlet>
 
   <servlet-mapping>

@@ -1,16 +1,14 @@
 package client;
 
 import com.google.gson.Gson;
-import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpException;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.StringRequestEntity;
-import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClients;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,25 +17,22 @@ import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 
 public class SkierClient {
-//  private static String url = "http://localhost:8080/scalable-distributed-systems_war_exploded/";
-//  private static final String postSkierUrl = "http://localhost:8080/scalable-distributed-systems_war_exploded/skiers/123/seasons/234/days/1/skiers/%s";
-//private static final String postSkierUrl = "http://ec2-34-222-164-46.us-west-2.compute.amazonaws.com:8080/distributed-systems-NU_war/skiers/12/seasons/2019/days/1/skiers/%s";
-private static final String postSkierUrl = "http://%s/distributed-systems-NU_war/skiers/12/seasons/2019/days/1/skiers/%s";
-
+  private static final String postSkierUrl = "http://%s/distributed-systems-NU_war/skiers/12/seasons/2019/days/1/skiers/%s";
   private static int successfulRequests = 0;
   private static int failedRequests = 0;
   private static long wallTime = 0;
   private static List<RequestPerformance> requestPerformances = new ArrayList<>();
   private static final Object requestPerformanceLock = new Object();
-  private static String host = "";
+  private static String ipPort;
+//  private static HttpClient client;
 
   public static void main(String[] args) throws Exception {
     int numThreads = Integer.parseInt(args[0]);
     int numSkiers = Integer.parseInt(args[1]);
     int numLifts = Integer.parseInt(args[2]);
     int numRuns = Integer.parseInt(args[3]);
-    String ipPort = args[4];
-    host = ipPort;
+    ipPort = args[4];
+//    client = HttpClients.createDefault();
     long startRuntime = System.currentTimeMillis();
     executePhase1(numThreads, numSkiers, numLifts, numRuns);
     executePhase2(numThreads, numSkiers, numLifts, numRuns);
@@ -53,7 +48,33 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
     System.out.println("Total throughput: " + throughput + " requests/s");
     writeReqPerformancesToCsv("performance.csv");
     printPerformances();
+
+//    long startRuntime = System.currentTimeMillis();
+//    System.out.println("Running single threaded client");
+//    for (int i = 0; i < 1000; i++) {
+//      sendPost(1, 1, 1, 1);
+//      System.out.println("i=" + i);
+//    }
+//    long endRuntime = System.currentTimeMillis();
+//    System.out.println("Total time: " + (endRuntime - startRuntime) + " ms");
+
+//    test();
   }
+
+//  private static void test() {
+//    int numThreads = 32;
+//    int numRequests = 1000;
+//    for (int i = 0; i < numThreads; i++) {
+//      Runnable thread = () -> {
+//        for (int j = 0; j < numRequests; j++) {
+//          System.out.println("j=" + j);
+////          sendPost(1, 2, 3, 4);
+//          sendPostTest(j);
+//        }
+//      };
+//      new Thread(thread).start();
+//    }
+//  }
 
   private static void executePhase1(
           final int numThreads,
@@ -61,6 +82,7 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
           final int numLifts,
           final int numRuns
   ) throws InterruptedException {
+    System.out.println("Executing phase 1");
     int numThreadsPhase1 = numThreads / 4;
     int skierIdRange = numSkiers / numThreadsPhase1;
     int skierIdStart = 1;
@@ -69,6 +91,8 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
     final int numRequests = (int) Math.round(0.2 * numRuns * numSkiers / numThreadsPhase1);
 
     CountDownLatch phase1Latch = new CountDownLatch((int) Math.ceil(numThreadsPhase1 * 0.2));
+    System.out.println("Phase 1: numThreads = " + numThreadsPhase1);
+    System.out.println("Phase 1: numRequests = " + numRequests);
     for (int i = 0; i < numThreadsPhase1; i++) {
       final int currSkierIdStart = skierIdStart;
       final int currSkierIdEnd = currSkierIdStart + skierIdRange - 1;
@@ -89,12 +113,15 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
           final int numLifts,
           final int numRuns
   ) throws InterruptedException {
+    System.out.println("Executing phase 2");
     final int timeStart = 91;
     final int timeEnd = 360;
     final int skierIdRange = numSkiers / numThreads;
     int skierIdStart = 1;
     final int numRequests = (int) Math.round(0.6 * numRuns * numSkiers / numThreads);
     CountDownLatch phase2Latch = new CountDownLatch((int) Math.ceil(numThreads * 0.2));
+    System.out.println("Phase 2: numThreads = " + numThreads);
+    System.out.println("Phase 2: numRequests = " + numRequests);
     for (int i = 0; i < numThreads; i++) {
       final int currSkierIdStart = skierIdStart;
       final int currSkierIdEnd = currSkierIdStart + skierIdRange - 1;
@@ -114,12 +141,15 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
           final int numLifts,
           final int numRuns
   ) {
+    System.out.println("Executing phase 3");
     final int timeStart = 361;
     final int timeEnd = 420;
     final int numThreadsPhase3 = numThreads / 10;
     final int skierIdRange = numSkiers / numThreadsPhase3;
     int skierIdStart = 1;
     final int numRequests = (int) Math.round(0.1 * numRuns);
+    System.out.println("Phase 3: numThreads = " + numThreadsPhase3);
+    System.out.println("Phase 3: numRequests = " + numRequests);
     for (int i = 0; i < numThreadsPhase3; i++) {
       final int currSkierIdStart = skierIdStart;
       final int currSkierIdEnd = currSkierIdStart + skierIdRange - 1;
@@ -140,16 +170,19 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
           int timeEnd
   ) {
     Random rand = new Random();
+    HttpClient client = HttpClients.createDefault();
     for (int i = 0; i < numRequests; i++) {
       int skierId = rand.nextInt(skierIdEnd - skierIdStart) + skierIdStart;
       int liftId = rand.nextInt(numLifts - 1) + 1;
       int time = rand.nextInt(timeEnd - timeStart) + timeStart;
       int waitTime = rand.nextInt(11);
-      int statusCode = sendPostDecorator(skierId, liftId, time, waitTime);
-      if (statusCode == 201) {
+      int statusCode = sendPostDecorator(client, skierId, liftId, time, waitTime);
+      if (statusCode < 300) {
         incrementSuccess();
       } else if (statusCode >= 400) {
         incrementFailures();
+      } else {
+        System.out.println("Received unhandled status code: " + statusCode);
       }
     }
   }
@@ -163,13 +196,14 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
   }
 
   private static int sendPostDecorator(
+          HttpClient client,
           int skierId,
           int liftId,
           int time,
           int waitTime
   ) {
     long startTime = System.currentTimeMillis();
-    int statusCode = sendPost(skierId, liftId, time, waitTime);
+    int statusCode = sendPost(client, skierId, liftId, time, waitTime);
     long endTime = System.currentTimeMillis();
     long latency = endTime - startTime;
     RequestPerformance requestPerformance = new RequestPerformance();
@@ -184,6 +218,7 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
   }
 
   private static int sendPost(
+          HttpClient client,
           int skierId,
           int liftId,
           int time,
@@ -193,11 +228,11 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
       // TODO handle too many connections:
       // https://stackoverflow.com/questions/1978053/bindexception-address-already-in-use-on-a-client-socket
       // Create an instance of HttpClient.
-      HttpClient client = new HttpClient();
+      // HttpClient client = new HttpClient();
 
       // Create a method instance.
-      String url = String.format(postSkierUrl, host, skierId);
-      PostMethod method = new PostMethod(url);
+      String url = String.format(postSkierUrl, ipPort, skierId);
+      // PostMethod method = new PostMethod(url);
 
       // Provide custom retry handler is necessary
       RequestBodySkier requestBodySkier = new RequestBodySkier();
@@ -205,28 +240,37 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
       requestBodySkier.setTime(time);
       requestBodySkier.setWaitTime(waitTime);
       String body = new Gson().toJson(requestBodySkier);
-      StringRequestEntity requestEntity = new StringRequestEntity(
-              body,
-              "application/json",
-              "UTF-8");
-      method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
-              new DefaultHttpMethodRetryHandler(5, false));
-      method.setRequestEntity(requestEntity);
+      HttpPost post = new HttpPost(url);
+      post.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
+//      StringRequestEntity requestEntity = new StringRequestEntity(
+//              body,
+//              "application/json",
+//              "UTF-8");
+//      method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
+//              new DefaultHttpMethodRetryHandler(5, false));
+//      method.setRequestEntity(requestEntity);
 
       int statusCode = 0;
       try {
         // Execute the method.
-        statusCode = client.executeMethod(method);
-      } catch (HttpException e) {
-        System.err.println("Fatal protocol violation: " + e.getMessage());
-        e.printStackTrace();
-      } catch (IOException e) {
-        System.err.println("Fatal transport error: " + e.getMessage());
-        e.printStackTrace();
+//        statusCode = client.executeMethod(method);
+        statusCode = client.execute(post).getStatusLine().getStatusCode();
+      } catch (Exception e) {
+        System.out.println("Error while sending post request");
+        System.out.println(e);
       } finally {
-        // Release the connection.
-        method.releaseConnection();
+        post.releaseConnection();
       }
+//      } catch (HttpException e) {
+//        System.err.println("Fatal protocol violation: " + e.getMessage());
+//        e.printStackTrace();
+//      } catch (IOException e) {
+//        System.err.println("Fatal transport error: " + e.getMessage());
+//        e.printStackTrace();
+//      } finally {
+//        // Release the connection.
+//        method.releaseConnection();
+//      }
       return statusCode;
     } catch (Exception e) {
       throw new RuntimeException(e);
@@ -364,6 +408,44 @@ private static final String postSkierUrl = "http://%s/distributed-systems-NU_war
 //    } finally {
 //      // Release the connection.
 //      method.releaseConnection();
+//    }
+//  }
+
+//  private static void sendPostTest(
+//      int skierId
+//  ) {
+//    try {
+////      HttpClient client = new HttpClient();
+//      org.apache.http.client.HttpClient httpClient = HttpClients.createDefault();
+//
+//      // Create a method instance.
+//      String url = String.format(postSkierUrl, ipPort, skierId);
+////      PostMethod method = new PostMethod(url);
+//
+//      // Provide custom retry handler is necessary
+////      StringRequestEntity requestEntity = new StringRequestEntity(
+////              body,
+////              "application/json",
+////              "UTF-8");
+////      method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
+////              new DefaultHttpMethodRetryHandler(3, false));
+////      method.setRequestEntity(requestEntity);
+//
+////      int statusCode = 0;
+//
+//      HttpPost post = new HttpPost(url);
+//      try {
+//        // Execute the method.
+////        client.executeMethod(method);
+//        httpClient.execute(post);
+//      } catch (Exception e) {
+//        System.out.println(e);
+//      } finally {
+//        // Release the connection.
+////        method.releaseConnection();
+//      }
+//    } catch (Exception e) {
+//      throw new RuntimeException(e);
 //    }
 //  }
 }
