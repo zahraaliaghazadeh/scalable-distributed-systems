@@ -255,6 +255,11 @@ public class SkierClient {
         // Execute the method.
 //        statusCode = client.executeMethod(method);
         statusCode = client.execute(post).getStatusLine().getStatusCode();
+
+        // TODO debugging only, remove
+        if (statusCode >= 300) {
+          System.out.println("ERROR: getting status code " + statusCode);
+        }
       } catch (Exception e) {
         System.out.println("Error while sending post request");
         System.out.println(e);

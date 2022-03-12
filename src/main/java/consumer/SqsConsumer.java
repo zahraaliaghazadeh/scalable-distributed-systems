@@ -20,7 +20,7 @@ public class SqsConsumer {
     ExecutorService executorService = new ThreadPoolExecutor(
             numThreads,
             numThreads,
-            0L,
+            10000L,
             TimeUnit.MILLISECONDS,
             new LinkedBlockingQueue<Runnable>()
     );
@@ -38,6 +38,7 @@ public class SqsConsumer {
     for (int i = 0; i < numThreads; i++) {
       executorService.execute(startSqsConsumerTask);
     }
+    System.out.println("Listening for messages...");
   }
 
   private static void startSqsConsumer(SQSConnectionFactory connectionFactory) throws Exception {
