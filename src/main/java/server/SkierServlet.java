@@ -143,6 +143,9 @@ public class SkierServlet extends HttpServlet {
     } else {
       String reqPayloadStr = CharStreams.toString(req.getReader());
       int skierId = Integer.parseInt(urlParts[7]);
+      int resortId = Integer.parseInt(urlParts[1]);
+      String seasonId = urlParts[3];
+      String dayId = urlParts[5];
       SkierRequest skierRequest;
       try {
         skierRequest = gson.fromJson(reqPayloadStr, SkierRequest.class);
@@ -153,9 +156,12 @@ public class SkierServlet extends HttpServlet {
       }
       LiftRide liftRide = new LiftRide();
       liftRide.setSkierId(skierId);
-      liftRide.setLiftID(skierRequest.getLiftID());
+      liftRide.setLiftId(skierRequest.getLiftId());
       liftRide.setTime(skierRequest.getTime());
       liftRide.setWaitTime(skierRequest.getWaitTime());
+      liftRide.setResortId(resortId);
+      liftRide.setSeasonId(seasonId);
+      liftRide.setDayId(dayId);
       sqsPublisher.publish(gson.toJson(liftRide));
 
       res.setStatus(HttpServletResponse.SC_CREATED);
@@ -173,7 +179,7 @@ public class SkierServlet extends HttpServlet {
     if (urlParts.length == 8 &&
             StringUtils.isNumeric(urlParts[1]) &&
             urlParts[2].equals("seasons") &&
-            StringUtils.isNumeric(urlParts[3]) &&
+            StringUtils.isNotEmpty(urlParts[3]) &&
             urlParts[4].equals("days") &&
             StringUtils.isNumeric(urlParts[5]) &&
             urlParts[6].equals("skiers") &&

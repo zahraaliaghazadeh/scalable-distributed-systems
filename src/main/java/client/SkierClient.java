@@ -228,11 +228,9 @@ public class SkierClient {
       // TODO handle too many connections:
       // https://stackoverflow.com/questions/1978053/bindexception-address-already-in-use-on-a-client-socket
       // Create an instance of HttpClient.
-      // HttpClient client = new HttpClient();
 
       // Create a method instance.
       String url = String.format(postSkierUrl, ipPort, skierId);
-      // PostMethod method = new PostMethod(url);
 
       // Provide custom retry handler is necessary
       RequestBodySkier requestBodySkier = new RequestBodySkier();
@@ -242,18 +240,9 @@ public class SkierClient {
       String body = new Gson().toJson(requestBodySkier);
       HttpPost post = new HttpPost(url);
       post.setEntity(new StringEntity(body, ContentType.APPLICATION_JSON));
-//      StringRequestEntity requestEntity = new StringRequestEntity(
-//              body,
-//              "application/json",
-//              "UTF-8");
-//      method.getParams().setParameter(HttpMethodParams.RETRY_HANDLER,
-//              new DefaultHttpMethodRetryHandler(5, false));
-//      method.setRequestEntity(requestEntity);
-
       int statusCode = 0;
       try {
         // Execute the method.
-//        statusCode = client.executeMethod(method);
         statusCode = client.execute(post).getStatusLine().getStatusCode();
 
         // TODO debugging only, remove
@@ -266,16 +255,10 @@ public class SkierClient {
       } finally {
         post.releaseConnection();
       }
-//      } catch (HttpException e) {
-//        System.err.println("Fatal protocol violation: " + e.getMessage());
-//        e.printStackTrace();
-//      } catch (IOException e) {
-//        System.err.println("Fatal transport error: " + e.getMessage());
-//        e.printStackTrace();
-//      } finally {
-//        // Release the connection.
-//        method.releaseConnection();
-//      }
+
+      // Uncomment below for throttling
+//       Thread.sleep(100);
+
       return statusCode;
     } catch (Exception e) {
       throw new RuntimeException(e);

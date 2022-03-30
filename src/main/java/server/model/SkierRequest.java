@@ -2,7 +2,7 @@ package server.model;
 
 public class SkierRequest {
   private int time;
-  private int liftID;
+  private int liftId;
   private int waitTime;
 
   public int getTime() {
@@ -13,12 +13,12 @@ public class SkierRequest {
     this.time = time;
   }
 
-  public int getLiftID() {
-    return liftID;
+  public int getLiftId() {
+    return liftId;
   }
 
-  public void setLiftID(int liftID) {
-    this.liftID = liftID;
+  public void setLiftId(int liftId) {
+    this.liftId = liftId;
   }
 
   public int getWaitTime() {
