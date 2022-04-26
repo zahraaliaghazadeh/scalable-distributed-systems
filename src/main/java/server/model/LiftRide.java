@@ -64,4 +64,17 @@ public class LiftRide {
   public void setDayId(String dayId) {
     this.dayId = dayId;
   }
+
+  @Override
+  public String toString() {
+    return "LiftRide{" +
+            "skierId=" + skierId +
+            ", time=" + time +
+            ", liftId=" + liftId +
+            ", waitTime=" + waitTime +
+            ", resortId=" + resortId +
+            ", seasonId='" + seasonId + '\'' +
+            ", dayId='" + dayId + '\'' +
+            '}';
+  }
 }

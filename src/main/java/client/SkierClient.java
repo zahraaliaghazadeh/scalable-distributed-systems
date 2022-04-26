@@ -24,7 +24,6 @@ public class SkierClient {
   private static List<RequestPerformance> requestPerformances = new ArrayList<>();
   private static final Object requestPerformanceLock = new Object();
   private static String ipPort;
-//  private static HttpClient client;
 
   public static void main(String[] args) throws Exception {
     int numThreads = Integer.parseInt(args[0]);
@@ -32,7 +31,6 @@ public class SkierClient {
     int numLifts = Integer.parseInt(args[2]);
     int numRuns = Integer.parseInt(args[3]);
     ipPort = args[4];
-//    client = HttpClients.createDefault();
     long startRuntime = System.currentTimeMillis();
     executePhase1(numThreads, numSkiers, numLifts, numRuns);
     executePhase2(numThreads, numSkiers, numLifts, numRuns);
